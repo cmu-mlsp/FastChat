@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 import json
 import math
 import pathlib
-from typing import Dict, Optional, Sequence
+from typing import Dict, Optional, Sequence, List
 
 import numpy as np
 import torch
@@ -36,6 +36,9 @@ IGNORE_TOKEN_ID = LabelSmoother.ignore_index
 @dataclass
 class ModelArguments:
     model_name_or_path: Optional[str] = field(default="facebook/opt-125m")
+    freeze_embed: Optional[bool] = False
+    freeze_lm_head: Optional[bool] = False
+    freeze_layers_idxs: Optional[List[int]] = field(default_factory=list)
 
 
 @dataclass
@@ -260,6 +263,7 @@ def train():
         model_args.model_name_or_path,
         config=config,
         cache_dir=training_args.cache_dir,
+        device_map='auto'
     )
     tokenizer = transformers.AutoTokenizer.from_pretrained(
         model_args.model_name_or_path,
@@ -268,6 +272,20 @@ def train():
         padding_side="right",
         use_fast=False,
     )
+    modules_to_freeze = []
+    if model_args.freeze_embed:
+        modules_to_freeze.append(model.model.embed_tokens)
+    if model_args.freeze_lm_head:
+        modules_to_freeze.append(model.lm_head)
+    for lidx in model_args.freeze_layers_idxs:
+        modules_to_freeze.append(model.model.layers[lidx])
+    print(model_args.freeze_layers_idxs, len(model.model.layers))
+    for modules in modules_to_freeze:
+        for p in modules.parameters():
+            p.requires_grad = False
+    trainable_params = 0
+    trainable_params = sum([p.numel() for p in model.parameters() if p.requires_grad])
+    print(f'#trainable params = {trainable_params:.5e}')
     tokenizer.pad_token = tokenizer.unk_token
 
     # Load data
