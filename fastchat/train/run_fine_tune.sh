@@ -4,13 +4,13 @@ model_name_or_path=$1
 data_path=$2
 output_dir=$3
 
-layers_to_freeze=$(seq -s ' ' 5 34)
+layers_to_freeze=$(seq -s ' ' 1 30)
 python fastchat/train/train_mem.py \
 	--model_name_or_path "$model_name_or_path" \
 	--data_path "$data_path" \
 	--fp16 True \
 	--output_dir "$output_dir" \
-	--num_train_epochs 3 \
+	--num_train_epochs 5 \
 	--per_device_train_batch_size 1 \
 	--per_device_eval_batch_size 1 \
 	--gradient_accumulation_steps 16 \
@@ -24,7 +24,7 @@ python fastchat/train/train_mem.py \
     	--lr_scheduler_type "cosine" \
     	--logging_steps 1 \
   	--tf32 False \
-    	--model_max_length 1024 \
+    	--model_max_length 2048 \
     	--gradient_checkpointing True \
     	--lazy_preprocess True \
 	--freeze_embed True \

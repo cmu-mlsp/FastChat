@@ -39,6 +39,7 @@ class ModelArguments:
     freeze_embed: Optional[bool] = False
     freeze_lm_head: Optional[bool] = False
     freeze_layers_idxs: Optional[List[int]] = field(default_factory=list)
+    model_parallelism: Optional[bool] = False
 
 
 @dataclass
@@ -263,7 +264,7 @@ def train():
         model_args.model_name_or_path,
         config=config,
         cache_dir=training_args.cache_dir,
-        device_map='auto'
+        device_map='auto' if model_args.model_parallelism else None
     )
     tokenizer = transformers.AutoTokenizer.from_pretrained(
         model_args.model_name_or_path,
@@ -303,7 +304,9 @@ def train():
     # Save model
     model.config.use_cache = True
     trainer.save_state()
-    trainer_save_model_safe(trainer)
+    #trainer_save_model_safe(trainer)
+    trainer.save_model()
+
 
 
 if __name__ == "__main__":
