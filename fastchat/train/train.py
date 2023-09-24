@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 import json
 import math
 import pathlib
-from typing import Dict, Optional, Sequence, List
+from typing import Dict, Optional, Sequence, List, Union
 
 import numpy as np
 import torch
@@ -38,7 +38,7 @@ class ModelArguments:
     model_name_or_path: Optional[str] = field(default="facebook/opt-125m")
     freeze_embed: Optional[bool] = False
     freeze_lm_head: Optional[bool] = False
-    freeze_layers_idxs: Optional[List[int]] = field(default_factory=list)
+    freeze_layers_idxs: Optional[Union[List[int], str]] = field(default_factory=list)
     model_parallelism: Optional[bool] = False
 
 
@@ -278,9 +278,16 @@ def train():
         modules_to_freeze.append(model.model.embed_tokens)
     if model_args.freeze_lm_head:
         modules_to_freeze.append(model.lm_head)
-    for lidx in model_args.freeze_layers_idxs:
+    if isinstance(model_args.freeze_layers_idxs, str):
+        if model_args.freeze_layers_idxs == 'all_but_first_last':
+            freeze_layers_idxs = range(1, len(model.model.layers)-1)
+        else:
+            raise ValueError(f'Expected model_args.freeze_layers_idxs to be either List[int] or "all_but_first_last" but got {model_args.freeze_layers_idxs}')
+    else:
+        freeze_layers_idxs = model_args.freeze_layers_idxs
+    for lidx in freeze_layers_idxs:
         modules_to_freeze.append(model.model.layers[lidx])
-    print(model_args.freeze_layers_idxs, len(model.model.layers))
+    print(freeze_layers_idxs, len(model.model.layers))
     for modules in modules_to_freeze:
         for p in modules.parameters():
             p.requires_grad = False

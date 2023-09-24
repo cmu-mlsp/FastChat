@@ -4,7 +4,8 @@ model_name_or_path=$1
 data_path=$2
 output_dir=$3
 
-layers_to_freeze=$(seq -s ' ' 1 30)
+#layers_to_freeze=$(seq -s ' ' 1 38)
+layers_to_freeze="all_but_first_last"
 python fastchat/train/train_mem.py \
 	--model_name_or_path "$model_name_or_path" \
 	--data_path "$data_path" \
@@ -28,4 +29,5 @@ python fastchat/train/train_mem.py \
     	--gradient_checkpointing True \
     	--lazy_preprocess True \
 	--freeze_embed True \
+	--model_parallelism True \
 	--freeze_layers_idxs $layers_to_freeze
